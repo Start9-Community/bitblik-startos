@@ -5,12 +5,12 @@ export const manifest = setupManifest({
   id: 'bitblik',
   title: 'BitBlik',
   license: 'MIT',
-  packageRepo: 'https://github.com/bit-blik/bitblik-startos',
+  packageRepo: 'https://github.com/Start9-Community/bitblik-startos',
   upstreamRepo: 'https://github.com/bit-blik/bitblik',
   marketingUrl: 'https://bitblik.app',
   donationUrl: null,
   description: { short, long },
-  volumes: [],
+  volumes: ['main'],
   images: {
     bitblik: {
       source: {

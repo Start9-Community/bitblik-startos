@@ -14,7 +14,7 @@ exchanging Bitcoin over Lightning for BLIK payment codes through Nostr-based
 coordinators. This package runs its browser client on StartOS.
 
 - **Upstream repo:** <https://github.com/bit-blik/bitblik>
-- **Wrapper repo:** <https://github.com/bit-blik/bitblik-startos>
+- **Wrapper repo:** <https://github.com/Start9-Community/bitblik-startos>
 
 ---
 
@@ -39,15 +39,15 @@ coordinators. This package runs its browser client on StartOS.
 
 Package uses upstream's unmodified, commit-tagged web image.
 
-| Property      | Value                       |
-| ------------- | --------------------------- |
-| Image         | `ghcr.io/bit-blik/app-web`  |
-| Architectures | x86_64, aarch64             |
-| Entrypoint    | Upstream image entrypoint   |
+| Property      | Value                      |
+| ------------- | -------------------------- |
+| Image         | `ghcr.io/bit-blik/app-web` |
+| Architectures | x86_64, aarch64            |
+| Entrypoint    | Upstream image entrypoint  |
 
-| Subcontainer | Purpose                                            |
-| ------------ | -------------------------------------------------- |
-| `bitblik`    | Nginx server for the Flutter web client            |
+| Subcontainer | Purpose                                 |
+| ------------ | --------------------------------------- |
+| `bitblik`    | Nginx server for the Flutter web client |
 
 StartOS supplies `PAYMENT_SYSTEM=blik` on every launch. Upstream entrypoint
 renders this runtime setting into the client configuration before starting
@@ -55,15 +55,27 @@ Nginx.
 
 ## Volume and Data Layout
 
-No StartOS volumes are declared or mounted. Container serves static files and
-does not own durable server-side state.
+One volume holds the package's own state; the container serves static files and
+mounts no volume.
+
+| Volume | Mount point | Contents                                             |
+| ------ | ----------- | ---------------------------------------------------- |
+| `main` | not mounted | `store.json` — the URL chosen in **Set Primary URL** |
 
 Neko identity, settings, and browser session data remain inside browser storage
 for the exact origin used to open BitBlik.
 
 ## File Models
 
-None. Package writes no configuration files.
+One file model, read only by the StartOS package.
+
+| File         | Volume | Purpose                                       |
+| ------------ | ------ | --------------------------------------------- |
+| `store.json` | `main` | `primaryUrl`, the address **Open UI** prefers |
+
+Absent until **Set Primary URL** first runs, which rewrites it each time. A
+hand edit survives, and is ignored if it names a hostname the interface no
+longer has.
 
 ## Dependencies
 
@@ -74,12 +86,14 @@ Nostr relays, selected coordinators, and wallet providers directly.
 
 One browser interface exposes the web client.
 
-| Interface     | Id   | Type | Internal Port | Protocol                     |
-| ------------- | ---- | ---- | ------------- | ---------------------------- |
+| Interface     | Id   | Type | Internal Port | Protocol                      |
+| ------------- | ---- | ---- | ------------- | ----------------------------- |
 | Web Interface | `ui` | ui   | 80            | HTTP with StartOS TLS wrapper |
 
-StartOS launcher preference targets TLS-enabled mDNS address because browser
-secure identity storage does not initialize over plain HTTP.
+**Open UI** prefers the address chosen in **Set Primary URL**, which offers
+HTTPS addresses only, because browser secure identity storage does not
+initialize over plain HTTP. Until one is chosen, or while the chosen hostname is
+gone, it prefers a public domain, else the `.local` address.
 
 ## Installation and First-Run Flow
 
@@ -89,7 +103,16 @@ profile. User must export identity backup before trading.
 
 ## Actions
 
-None.
+One user-facing action.
+
+| Action          | Purpose                                    |
+| --------------- | ------------------------------------------ |
+| Set Primary URL | Choose the HTTPS address **Open UI** opens |
+
+Run it once you know which address you will use BitBlik from, and again only
+to move to another one — identity stored at the old address stays there, so
+export it first. It changes nothing but the launcher preference, needs no
+restart, and is safe to repeat.
 
 ## Tasks
 
@@ -100,17 +123,18 @@ prompt.
 
 One readiness check belongs to the only daemon.
 
-| Check     | Displayed       | Method               |
-| --------- | --------------- | -------------------- |
-| `bitblik` | Web Interface   | Port 80 is listening |
+| Check     | Displayed     | Method               |
+| --------- | ------------- | -------------------- |
+| `bitblik` | Web Interface | Port 80 is listening |
 
 Failure means Nginx did not bind its port. Inspect service logs for image,
 entrypoint, or runtime configuration errors.
 
 ## Backups and Restore
 
-Package uses an empty StartOS backup definition because it has no volumes.
-Restore recreates container and interface configuration only.
+Backups copy the `main` volume, so a restore keeps the primary URL. If its
+port changed in the restore, **Open UI** follows the same hostname to its new
+port.
 
 Browser-local Neko identity and settings are not part of StartOS backups.
 Recovery depends on backup exported from BitBlik itself.
@@ -119,8 +143,8 @@ Recovery depends on backup exported from BitBlik itself.
 
 1. Browser identity is origin- and profile-specific. Opening another hostname,
    device, or browser profile creates separate storage.
-2. Plain HTTP cannot initialize secure identity storage. Use HTTPS address
-   exported by StartOS.
+2. Plain HTTP cannot initialize secure identity storage. **Set Primary URL**
+   offers HTTPS addresses only.
 3. Package runs only BitBlik web client. It does not run a coordinator,
    Lightning node, Nostr relay, or wallet backend.
 4. StartOS cannot back up browser-local identity or settings.
@@ -137,14 +161,17 @@ architectures:
   - aarch64
 subcontainers:
   - bitblik
-volumes: {}
-file_models: []
+volumes:
+  main: { mount: null }
+file_models:
+  - main/store.json
 startos_managed_env_vars:
   - PAYMENT_SYSTEM
 dependencies: []
 interfaces:
   ui: { type: ui, port: 80 }
-actions: []
+actions:
+  - set-primary-url
 tasks: []
 health_checks:
   - bitblik
