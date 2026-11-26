@@ -12,17 +12,18 @@ account or trading data on StartOS.
 
 ## Getting set up
 
-1. Open **Web Interface** from BitBlik dashboard.
-2. Confirm address begins with `https://`. Secure identity storage does not work
-   over plain HTTP.
-3. Create new Neko identity or import existing backup in BitBlik.
-4. Export Neko backup and store it safely before trading.
-5. Follow in-app flow to choose coordinator and connect Lightning wallet.
+1. Run **Set Primary URL** and pick the address you will open BitBlik from —
+   the `.local` one at home, a domain if you use it from elsewhere.
+2. Open **Web Interface** from the BitBlik dashboard.
+3. Create a new Neko identity or import an existing backup in BitBlik.
+4. Export your Neko backup and store it safely before trading.
+5. Follow the in-app flow to choose a coordinator and connect a Lightning wallet.
 
 ## Using BitBlik
 
-Use same HTTPS address and browser profile each time. Another hostname, device,
-or browser profile has separate identity storage.
+Use the same address and browser profile each time. Another hostname, device,
+or browser profile has separate identity storage, so a new primary URL opens
+with no identity until you import your backup there.
 
 BLIK is initial market. You can select another supported payment system inside
 BitBlik settings.
